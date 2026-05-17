@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server"
-import { lookup } from "geoip-lite";
 
 const PASSWORD = process.env.BASIC_AUTH_PASSWORD;
 

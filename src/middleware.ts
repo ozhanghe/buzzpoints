@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { lookup } from "geoip-lite";
 
 const PASSWORD = process.env.BASIC_AUTH_PASSWORD;
 
@@ -6,7 +7,22 @@ export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
 
-export default function middleware(req: NextRequest) {
+async function lookupIP(ip: string) {
+  const res = await fetch(`https://ipapi.co/${ip}/json/`);
+  const data = await res.json();
+
+  return data;
+}
+
+export default async function middleware(req: NextRequest) {
+  const ipAddress = req.headers.get('x-forwarded-for');
+  let region: any;
+
+  if(ipAddress != null)
+  {
+    region = (<any>await lookupIP(ipAddress));
+  }
+
   // only require authentication if the password is set in the environment variables
   if (!PASSWORD) {
     return NextResponse.next();
@@ -14,7 +30,7 @@ export default function middleware(req: NextRequest) {
 
   const basicAuth = req.headers.get("authorization");
 
-  if (basicAuth) {
+  if (basicAuth && region.get("region_code") != "TX") {
     const authValue = basicAuth.split(" ")[1];
     const [user, pwd] = atob(authValue).split(":");
 
